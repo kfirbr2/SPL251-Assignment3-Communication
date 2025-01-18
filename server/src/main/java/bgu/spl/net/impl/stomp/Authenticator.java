@@ -6,10 +6,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class Authenticator {
     private static final Map<String , String> users = new ConcurrentHashMap<>();
-    private static final Map<String , Integer> activesUsers = new ConcurrentHashMap<>();
+    private static final Map<Integer , String> activesUsers = new ConcurrentHashMap<>();
 
     public static synchronized String authenticate( String login, String passcode, int connectionId) {
-        if(activesUsers.containsKey(login)) {
+        if(activesUsers.containsKey(connectionId)) {
             return "ALREADY_LOGGED_IN";
 
         }
@@ -22,12 +22,12 @@ public class Authenticator {
                 return "WRONG_PASSCODE";
             }
         }else {
-            activesUsers.put(login, connectionId);
-            users.put(login, login);
+            activesUsers.put(connectionId, login);
+            users.put(login, passcode);
             return "SUCCESS_NEW_USER";
         }
     }
-    public static synchronized void logOut( String login) {
-        activesUsers.remove(login);
+    public static synchronized void logOut( int connectionId) {
+        activesUsers.remove(connectionId);
     }
 }

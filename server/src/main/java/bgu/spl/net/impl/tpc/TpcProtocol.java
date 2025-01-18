@@ -1,17 +1,19 @@
 package bgu.spl.net.impl.tpc;
 
 import bgu.spl.net.api.StompMessagingProtocol;
+import bgu.spl.net.impl.stomp.Handlers;
+import bgu.spl.net.srv.ConnectionImpl;
 import bgu.spl.net.srv.Connections;
 
 public class TpcProtocol implements StompMessagingProtocol<String> {
     private boolean shouldTerminate = false;
     private int connectionId;
-    private Connections connections;
+    private ConnectionImpl connections;
 
     @Override
     public void start(int connectionId, Connections<String> connections) {
         this.connectionId=connectionId;
-        this.connections=connections;
+        this.connections=(ConnectionImpl) connections;
     }
 
 
@@ -23,20 +25,20 @@ public class TpcProtocol implements StompMessagingProtocol<String> {
             case "CONNECT":
                 Handlers.handleConnect(parts, connectionId,connections);
                 break;
-                case "DISCONNECT":
-                    Handlers.handleDisconnect(parts,connectionId, connections);
-                    break;
-                    case "SUBSCRIBE":
-                        Handlers.handleSubscribe(parts,connectionId, connections);
-                        break;
-                        case "UNSUBSCRIBE":
-                            Handlers.handleUnsubscribe(parts,connectionId, connections);
-                            break;
-                            case "SEND":
-                                Handlers.handleSend(parts,connectionId, connections);
-                                break;
-                                default:
-                                    sendError("Unknown command: " + command);
+            case "DISCONNECT":
+                Handlers.handleDisconnect(parts,connectionId, connections);
+                break;
+            case "SUBSCRIBE":
+                Handlers.handleSubscribe(parts,connectionId, connections);
+                break;
+            case "UNSUBSCRIBE":
+                Handlers.handleUnsubscribe(parts,connectionId, connections);
+                break;
+            case "SEND":
+                Handlers.handleSend(parts,connectionId, connections);
+                break;
+            default:
+                sendError("Unknown command: " + command);
 
         }
 

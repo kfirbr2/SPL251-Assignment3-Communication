@@ -1,6 +1,7 @@
 package bgu.spl.net.impl.stomp;
 
 import bgu.spl.net.srv.Connections;
+import bgu.spl.net.srv.ConnectionImpl;
 
 public class Handlers {
     private static String extractHeader (String [] lines , String key){
@@ -27,7 +28,7 @@ public class Handlers {
         return body.toString().trim();
 
     }
-    public static void handleConnect (String [] msg,int connectionId, Connections connection) {
+    public static void handleConnect (String [] msg,int connectionId, ConnectionImpl connection) {
       String login=extractHeader(msg,"login");
       String passcode=extractHeader(msg,"passcode");
       String status=Authenticator.authenticate(login,passcode,connectionId);
@@ -48,4 +49,38 @@ public class Handlers {
       }
 
     }
+    public static void handleDisconnect (String [] msg,int connectionId, ConnectionImpl connection) {
+        String receiptId=extractHeader(msg,"receipt");
+        connection.send(connectionId,"RECEIPT\nreceipt-id:" + receiptId + "\n\n\u0000");
+        Authenticator.logOut(connectionId);
+        connection.disconnect(connectionId);
+    }
+    public static void handleSubscribe (String [] msg,int connectionId, ConnectionImpl connection) {
+        String destination=extractHeader(msg,"destination");
+        String id=extractHeader(msg,"id");
+        if(destination.isEmpty() || id.isEmpty()){
+            connection.send(connectionId,"ERROR\nmessage:Malformed SUBSCRIBE frame\n\n\u0000");
+            connection.disconnect(connectionId);
+            return;
+        }
+        connection.subscribe(destination,connectionId, id);
+        connection.send(connectionId,"RECEIPT\nreceipt-id:" + id + "\n\n\u0000");
+
+    }
+    public static void handleUnsubscribe (String [] msg,int connectionId, ConnectionImpl connection) {
+        String id=extractHeader(msg,"id");
+        connection.unsubscribe(connectionId,id);
+        connection.send(connectionId,"RECEIPT\nreceipt-id:" + id + "\n\n\u0000");
+
+    }
+    public static void handleSend (String [] msg,int connectionId, ConnectionImpl connection) {
+        String destination=extractHeader(msg,"destination");
+        if(connection.isExistInChannel(destination,connectionId)){
+            connection.send(destination,extractBody(msg));
+        }
+        else {
+            connection.send(connectionId,"ERROR\nmessage:Not aloud to send message in unsbscribed channel\n\n\u0000");
+        }
+    }
+
 }
