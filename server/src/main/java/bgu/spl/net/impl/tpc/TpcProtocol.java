@@ -21,19 +21,19 @@ public class TpcProtocol implements StompMessagingProtocol<String> {
         String command = parts[0];
         switch (command) {
             case "CONNECT":
-                handleConnect(parts);
+                Handlers.handleConnect(parts, connectionId,connections);
                 break;
                 case "DISCONNECT":
-                    handleDisconnect(parts);
+                    Handlers.handleDisconnect(parts,connectionId, connections);
                     break;
                     case "SUBSCRIBE":
-                        handleSubscribe(parts);
+                        Handlers.handleSubscribe(parts,connectionId, connections);
                         break;
                         case "UNSUBSCRIBE":
-                            handleUnsubscribe(parts);
+                            Handlers.handleUnsubscribe(parts,connectionId, connections);
                             break;
                             case "SEND":
-                                handleSend(parts);
+                                Handlers.handleSend(parts,connectionId, connections);
                                 break;
                                 default:
                                     sendError("Unknown command: " + command);
