@@ -30,6 +30,22 @@ public class Handlers {
     public static void handleConnect (String [] msg,int connectionId, Connections connection) {
       String login=extractHeader(msg,"login");
       String passcode=extractHeader(msg,"passcode");
+      String status=Authenticator.authenticate(login,passcode,connectionId);
+      switch (status){
+          case "ALREADY_LOGGED_IN":
+              connection.send(connectionId,"ERROR\nmessage:The client is already logged in,log out before trying\n\n\u0000");
+          break;
+          case "SUCCESS_EXISTING_USER":
+              connection.send(connectionId,"CONNECTED\nversion:1.2\n\n\u0000");
+              break;
+          case "WRONG_PASSCODE":
+              connection.send(connectionId,"ERROR\nWrong password\n\n\u0000");
+              break;
+          case "SUCCESS_NEW_USER":
+              connection.send(connectionId,"CONNECTED\nversion:1.2\n\n\u0000");
+              break;
+
+      }
 
     }
 }
