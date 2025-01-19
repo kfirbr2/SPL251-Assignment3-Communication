@@ -77,10 +77,14 @@ public class ConnectionImpl<T> implements Connections<T> {
 
     }
 
+
+public  boolean isExistInChannel(String channel, int connectionId){
+        if(channels.containsKey(channel)) {
+            if(channels.get(channel).contains(connectionId)){
+                return true;
+            }
+        }
+return false;
     }
-//public  boolean isExistInChannel(String channel, int connectionId){
-        //return channels.get(channel).contains(connectionId);
 
-   // }
-
-//}
+}

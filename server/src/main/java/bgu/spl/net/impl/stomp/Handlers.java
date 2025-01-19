@@ -4,6 +4,13 @@ import bgu.spl.net.srv.Connections;
 import bgu.spl.net.srv.ConnectionImpl;
 
 public class Handlers {
+    private final StompProtocol<?> protocol;
+    public Handlers(StompProtocol<?> protocol){
+        this.protocol = protocol;
+    }
+    public StompProtocol<?> getProtocol(){
+
+    }
     private static String extractHeader (String [] lines , String key){
         for(String line : lines){
             if(line.startsWith(key + ":")){
@@ -28,7 +35,7 @@ public class Handlers {
         return body.toString().trim();
 
     }
-    public static void handleConnect (String [] msg,int connectionId, ConnectionImpl connection) {
+    public static void handleConnect (String [] msg,int connectionId, Connections connection) {
       String login=extractHeader(msg,"login");
       String passcode=extractHeader(msg,"passcode");
       String status=Authenticator.authenticate(login,passcode,connectionId);
@@ -49,13 +56,15 @@ public class Handlers {
       }
 
     }
-    public static void handleDisconnect (String [] msg,int connectionId, ConnectionImpl connection) {
+    public static void handleDisconnect (String [] msg,int connectionId, Connections connection) {
         String receiptId=extractHeader(msg,"receipt");
         connection.send(connectionId,"RECEIPT\nreceipt-id:" + receiptId + "\n\n\u0000");
         Authenticator.logOut(connectionId);
         connection.disconnect(connectionId);
+
+
     }
-    public static void handleSubscribe (String [] msg,int connectionId, ConnectionImpl connection) {
+    public static void handleSubscribe (String [] msg,int connectionId, Connections connection) {
         String destination=extractHeader(msg,"destination");
         String id=extractHeader(msg,"id");
         if(destination.isEmpty() || id.isEmpty()){
@@ -63,24 +72,43 @@ public class Handlers {
             connection.disconnect(connectionId);
             return;
         }
-        connection.subscribe(destination,connectionId, id);
+        ((ConnectionImpl<?>)connection).subscribe(destination,connectionId, id);
         connection.send(connectionId,"RECEIPT\nreceipt-id:" + id + "\n\n\u0000");
 
     }
-    public static void handleUnsubscribe (String [] msg,int connectionId, ConnectionImpl connection) {
+    public static void handleUnsubscribe (String [] msg,int connectionId, Connections connection) {
         String id=extractHeader(msg,"id");
-        connection.unsubscribe(connectionId,id);
+        ((ConnectionImpl<?>)connection).unsubscribe(connectionId,id);
         connection.send(connectionId,"RECEIPT\nreceipt-id:" + id + "\n\n\u0000");
 
     }
-    public static void handleSend (String [] msg,int connectionId, ConnectionImpl connection) {
+    public static void handleSend (String [] msg,int connectionId, Connections connection) {
         String destination=extractHeader(msg,"destination");
-        if(connection.isExistInChannel(destination,connectionId)){
+        if(((ConnectionImpl<?>)connection).isExistInChannel(destination,connectionId)){
             connection.send(destination,extractBody(msg));
         }
         else {
-            connection.send(connectionId,"ERROR\nmessage:Not aloud to send message in unsbscribed channel\n\n\u0000");
+            connection.send(connectionId,"ERROR\nmessage:Not allowed to send message in unsbscribed channel\n\n\u0000");
         }
     }
+    public static void handleError (String  errorMsg,int connectionId, Connections connection,String[] originalMsg) {
+        String receiptId= extractHeader(originalMsg,"receipt");
+        StringBuilder errorFrame=new StringBuilder();
+        errorFrame.append("ERROR\n");
+        errorFrame.append("receipt-id:" + receiptId + "\n");
+        errorFrame.append("message:" + errorMsg + "\n");
+        errorFrame.append("\n");
+        errorFrame.append("The message:\n");
+        errorFrame.append("-----\n");
+        errorFrame.append(String.join("\n", originalMsg)).append("\n");
+        errorFrame.append("-----\n");
+        errorFrame.append("\u0000");
+
+        connection.send(connectionId,errorFrame.toString());
+        connection.disconnect(connectionId);
+    }
+  public void setProtocol (boolean shouldTerminate) {
+      protocol.setshouldTerminate(true);
+  }
 
 }
