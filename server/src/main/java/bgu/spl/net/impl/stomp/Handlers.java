@@ -8,9 +8,7 @@ public class Handlers {
     public Handlers(StompProtocol<?> protocol){
         this.protocol = protocol;
     }
-   // public StompProtocol<?> getProtocol(){
 
-    //}
     private static String extractHeader (String [] lines , String key){
         for(String line : lines){
             if(line.startsWith(key + ":")){
@@ -56,9 +54,10 @@ public class Handlers {
       }
 
     }
-    public static void handleDisconnect (String [] msg,int connectionId, Connections connection) {
+    public static void handleDisconnect (String [] msg,int connectionId, Connections connection, StompProtocol protocol) {
         String receiptId=extractHeader(msg,"receipt");
         connection.send(connectionId,"RECEIPT\nreceipt-id:" + receiptId + "\n\n\u0000");
+        protocol.setshouldTerminate(true);
         Authenticator.logOut(connectionId);
         connection.disconnect(connectionId);
 
@@ -91,7 +90,7 @@ public class Handlers {
             connection.send(connectionId,"ERROR\nmessage:Not allowed to send message in unsbscribed channel\n\n\u0000");
         }
     }
-    public static void handleError (String  errorMsg,int connectionId, Connections connection,String[] originalMsg) {
+    public static void handleError (String  errorMsg,int connectionId, Connections connection,String[] originalMsg, StompProtocol protocol) {
         String receiptId= extractHeader(originalMsg,"receipt");
         StringBuilder errorFrame=new StringBuilder();
         errorFrame.append("ERROR\n");
@@ -106,12 +105,9 @@ public class Handlers {
         errorFrame.append("\n");
         errorFrame.append("-----\n");
         errorFrame.append("\u0000");
-
+        protocol.setshouldTerminate(true);
         connection.send(connectionId,errorFrame.toString());
         connection.disconnect(connectionId);
     }
-  public void setProtocol (boolean shouldTerminate) {
-      protocol.setshouldTerminate(true);
-  }
 
 }

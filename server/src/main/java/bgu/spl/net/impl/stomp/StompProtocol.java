@@ -29,7 +29,7 @@ public class StompProtocol<T> implements StompMessagingProtocol<T> {
                 Handlers.handleConnect(parts, connectionId, connections);
                 break;
             case "DISCONNECT":
-                Handlers.handleDisconnect(parts, connectionId, connections);
+                Handlers.handleDisconnect(parts, connectionId, connections, this);
                 break;
             case "SUBSCRIBE":
                 Handlers.handleSubscribe(parts, connectionId, connections);
@@ -41,7 +41,7 @@ public class StompProtocol<T> implements StompMessagingProtocol<T> {
                 Handlers.handleSend(parts, connectionId, connections);
                 break;
             default:
-                Handlers.handleError("wrong headframe",connectionId,connections,null);
+                Handlers.handleError("wrong headframe",connectionId,connections,null, this);
 
         }
 
