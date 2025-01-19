@@ -33,19 +33,19 @@ public class Handlers {
         return body.toString().trim();
 
     }
-    public static void handleConnect (String [] msg,int connectionId, Connections connection) {
+    public static void handleConnect (String [] msg,int connectionId, Connections connection, StompProtocol protocol) {
       String login=extractHeader(msg,"login");
       String passcode=extractHeader(msg,"passcode");
       String status=Authenticator.authenticate(login,passcode,connectionId);
       switch (status){
           case "ALREADY_LOGGED_IN":
-              connection.send(connectionId,"ERROR\nmessage:The client is already logged in,log out before trying\n\n\u0000");
+          handleError("The client is already logged in,log out before trying", connectionId, connection, msg, protocol);
           break;
           case "SUCCESS_EXISTING_USER":
               connection.send(connectionId,"CONNECTED\nversion:1.2\n\n\u0000");
               break;
           case "WRONG_PASSCODE":
-              connection.send(connectionId,"ERROR\nWrong password\n\n\u0000");
+              handleError("Wrong password", connectionId, connection, msg, protocol);
               break;
           case "SUCCESS_NEW_USER":
               connection.send(connectionId,"CONNECTED\nversion:1.2\n\n\u0000");
@@ -63,11 +63,11 @@ public class Handlers {
 
 
     }
-    public static void handleSubscribe (String [] msg,int connectionId, Connections connection) {
+    public static void handleSubscribe (String [] msg,int connectionId, Connections connection, StompProtocol protocol) {
         String destination=extractHeader(msg,"destination");
         String id=extractHeader(msg,"id");
         if(destination.isEmpty() || id.isEmpty()){
-            connection.send(connectionId,"ERROR\nmessage:Malformed SUBSCRIBE frame\n\n\u0000");
+            handleError("Malformed SUBSCRIBE frame", connectionId, connection, msg, protocol);
             connection.disconnect(connectionId);
             return;
         }
@@ -81,13 +81,13 @@ public class Handlers {
         connection.send(connectionId,"RECEIPT\nreceipt-id:" + id + "\n\n\u0000");
 
     }
-    public static void handleSend (String [] msg,int connectionId, Connections connection) {
+    public static void handleSend (String [] msg,int connectionId, Connections connection, StompProtocol protocol) {
         String destination=extractHeader(msg,"destination");
         if(((ConnectionImpl<?>)connection).isExistInChannel(destination,connectionId)){
             connection.send(destination,extractBody(msg));
         }
         else {
-            connection.send(connectionId,"ERROR\nmessage:Not allowed to send message in unsbscribed channel\n\n\u0000");
+            handleError("Not allowed to send message in unsbscribed channel", connectionId, connection, msg, protocol);
         }
     }
     public static void handleError (String  errorMsg,int connectionId, Connections connection,String[] originalMsg, StompProtocol protocol) {
