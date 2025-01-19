@@ -10,7 +10,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 public class ConnectionImpl<T> implements Connections<T> {
     private final Map<Integer, ConnectionHandler<T>> connections=new ConcurrentHashMap<>(); //
     private final Map<String, Set<Integer>> channels=new ConcurrentHashMap<>();// channel to ids
-    private final Map<Integer,String> subscriptions=new ConcurrentHashMap<>();// subid to channel
+    private final Map<Integer,Map<String, String>> subscriptions=new ConcurrentHashMap<>();// subid to channel
 
     @Override
     public boolean send(int connectionId, T msg) {
@@ -33,11 +33,13 @@ public class ConnectionImpl<T> implements Connections<T> {
     @Override
     public void disconnect(int connectionId){
         connections.remove(connectionId);
-        subscriptions.remove(connectionId);
-        for (Set<Integer> channel : channels.values()) {
-            if(channel != null && channel.contains(connectionId)) {
-                channel.remove(connectionId);
+        //Remove from all channels
+        for(String channel : subscriptions.get(connectionId).values()) {
+            channels.get(channel).remove(connectionId);
+            if (channels.get(channel).isEmpty()) {
+                channels.remove(channel);
             }
+        subscriptions.remove(connectionId);
         }
     }
     public void register(ConnectionHandler<T> handler, int connectionId){
@@ -45,10 +47,40 @@ public class ConnectionImpl<T> implements Connections<T> {
     }
     public void subscribe(String channel, int connectionId , String SubscriptionId){
         channels.computeIfAbsent(channel, k -> new CopyOnWriteArraySet<>()).add(connectionId);
-        subscriptions.put(connectionId, SubscriptionId);
+        subscriptions.putIfAbsent(connectionId, new ConcurrentHashMap<>());
+        subscriptions.get(connectionId).put(channel, SubscriptionId);
     }
+
+
     public void unsubscribe(int connectionId, String SubscriptionId){
-        subscriptions.entrySet().removeIf(entry -> entry.getKey().equals(connectionId) && entry.getValue().equals(SubscriptionId));
-        channels.forEach((k, v) -> v.remove(connectionId));
+        if(subscriptions.containsKey(connectionId)) {
+            Map<String, String> userSubscriptions = subscriptions.get(connectionId);
+            //find the correct channel
+            String channelToRemove = null;
+            for(Map.Entry<String, String> entry : userSubscriptions.entrySet()) {
+                if(entry.getValue().equals(SubscriptionId)) {
+                    channelToRemove = entry.getKey();
+                    break;
+                }
+            }
+            //Remove connectionId from the corrent channel
+            if(channelToRemove != null) {
+                userSubscriptions.remove(channelToRemove);
+                if(channels.containsKey(channelToRemove)) {
+                    channels.get(channelToRemove).remove(connectionId);
+                }
+                if(userSubscriptions.isEmpty()) {
+                    subscriptions.remove(connectionId);
+                }
+            }
         }
-}
+
+    }
+
+    }
+//public  boolean isExistInChannel(String channel, int connectionId){
+        //return channels.get(channel).contains(connectionId);
+
+   // }
+
+//}
