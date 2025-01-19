@@ -6,11 +6,35 @@ import bgu.spl.net.srv.Server;
 public class StompServer {
 
     public static void main(String[] args) {
-        int port = 8080;//needed args[0]
-        Server.threadPerClient(
-                port, //port
-                () -> new TpcProtocol(), //protocol factory
-                LineMessageEncoderDecoder::new //message encoder decoder factory
-        ).serve();
+        if (args.length < 2) { 
+            System.out.println("Usage: StompServer <port> <serverType>");
+            return;
+        }
+    
+        int port = Integer.parseInt(args[0]); 
+        String serverType = args[1]; 
+    
+        Server<?> server;
+        if ("tpc".equalsIgnoreCase(serverType)) { 
+            server = Server.threadPerClient(
+                port,
+                () -> new StompProtocol(),
+                StompEncoderDecoder::new
+            );
+        } else if ("reactor".equalsIgnoreCase(serverType)) { 
+            server = Server.reactor(
+                Runtime.getRuntime().availableProcessors(),
+                port,
+                StompProtocol::new,
+                StompEncoderDecoder::new
+            );
+        } else {
+            System.out.println("Invalid server type. Use 'tpc' or 'reactor'.");
+            return;
+        }
+    
+        server.serve(); 
     }
+
 }
+    
