@@ -8,8 +8,9 @@ import bgu.spl.net.srv.Server;
 public class StompServer {
 
     public static void main(String[] args) {
+        int port = 8080;//needed args[0]
         Server.threadPerClient(
-                7777, //port
+                port, //port
                 () -> new TpcProtocol(), //protocol factory
                 LineMessageEncoderDecoder::new //message encoder decoder factory
         ).serve();

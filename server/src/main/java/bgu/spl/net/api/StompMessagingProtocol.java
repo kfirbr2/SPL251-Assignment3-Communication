@@ -10,8 +10,6 @@ public interface StompMessagingProtocol<T>  {
     
     void process(T message);
 
-	void start(int connectionId, Connections<T> connections);
-
 	/**
      * @return true if the connection should be terminated
      */
