@@ -41,7 +41,7 @@ public class StompProtocol<T> implements StompMessagingProtocol<T> {
                 Handlers.handleSend(parts, connectionId, connections);
                 break;
             default:
-                Handlers.handleError("wrong headframe",connectionId,connections,"");
+                Handlers.handleError("wrong headframe",connectionId,connections,null);
 
         }
 

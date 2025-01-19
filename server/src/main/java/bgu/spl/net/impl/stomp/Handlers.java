@@ -8,9 +8,9 @@ public class Handlers {
     public Handlers(StompProtocol<?> protocol){
         this.protocol = protocol;
     }
-    public StompProtocol<?> getProtocol(){
+   // public StompProtocol<?> getProtocol(){
 
-    }
+    //}
     private static String extractHeader (String [] lines , String key){
         for(String line : lines){
             if(line.startsWith(key + ":")){
@@ -100,7 +100,10 @@ public class Handlers {
         errorFrame.append("\n");
         errorFrame.append("The message:\n");
         errorFrame.append("-----\n");
-        errorFrame.append(String.join("\n", originalMsg)).append("\n");
+        if(originalMsg!= null){
+            errorFrame.append(String.join("\n", originalMsg));
+        }
+        errorFrame.append("\n");
         errorFrame.append("-----\n");
         errorFrame.append("\u0000");
 
