@@ -10,7 +10,7 @@ public class StompEncoderDecoder<T>  implements MessageEncoderDecoder<T>{
 
     @Override
     public T decodeNextByte(byte nextByte){
-        if (nextByte == '\0') { // STOMP messages end with NULL character
+        if (nextByte == '\u0000') { // STOMP messages end with NULL character
             String message = new String(toByteArray(buffer), StandardCharsets.UTF_8);
             buffer.clear(); 
             return (T) message.split("\n");
