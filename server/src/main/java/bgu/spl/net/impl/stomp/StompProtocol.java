@@ -1,10 +1,9 @@
 package bgu.spl.net.impl.stomp;
 
 import bgu.spl.net.api.StompMessagingProtocol;
-import bgu.spl.net.srv.ConnectionImpl;
 import bgu.spl.net.srv.Connections;
 
-public class StompProtocol<T> implements MessagingProtocol<T> {
+public class StompProtocol<T> implements StompMessagingProtocol<T> {
 
 
     private boolean shouldTerminate = false;

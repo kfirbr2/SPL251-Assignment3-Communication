@@ -5,7 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
  
 
-public class StompEncoderDecoder<T>  implements MessageEncoderDecoder<T>{
+public class StompMessageEncoderDecoder<T>  implements MessageEncoderDecoder<T>{
     private ArrayList<Byte> buffer = new ArrayList<>();
 
     @Override
