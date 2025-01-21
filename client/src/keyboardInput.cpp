@@ -1,4 +1,4 @@
-#include "keyboardInput.h"
+#include "../include/keyboardInput.h"
 
 void split_str(string line, char sign, vector<string> lineArgs)
 {

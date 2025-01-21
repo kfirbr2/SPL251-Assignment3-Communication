@@ -72,6 +72,15 @@ bool ConnectionHandler::sendLine(std::string &line) {
 	return sendFrameAscii(line, '\n');
 }
 
+bool ConnectionHandler::sendMessage(std::string &message)
+{
+	return sendFrameAscii(message, '\0');
+}
+
+bool ConnectionHandler::getMessage(std::string &message)
+{
+	return getFrameAscii(message, '\0');
+}
 
 bool ConnectionHandler::getFrameAscii(std::string &frame, char delimiter) {
 	char ch;
