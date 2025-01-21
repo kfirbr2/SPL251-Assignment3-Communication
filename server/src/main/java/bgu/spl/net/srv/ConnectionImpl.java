@@ -8,9 +8,23 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 public class ConnectionImpl<T> implements Connections<T> {
-    private final Map<Integer, ConnectionHandler<T>> connections=new ConcurrentHashMap<>(); //
+    private final Map<Integer, ConnectionHandler<T>> connections=new ConcurrentHashMap<>(); // connectionId per client
     private final Map<String, Set<Integer>> channels=new ConcurrentHashMap<>();// channel to ids
     private final Map<Integer,Map<String, String>> subscriptions=new ConcurrentHashMap<>();// subid to channel
+    private static Connections<?> instance = null; 
+    private static final Object lock = new Object(); // Lock for thread safety
+
+    public static <T> Connections<T> getInstance() {
+        if (instance == null) {
+            synchronized (lock) { 
+                if (instance == null) {  
+                    instance = new ConnectionImpl<>();
+                }
+            }
+        }
+        return (Connections<T>) instance;
+    }
+
 
     @Override
     public boolean send(int connectionId, T msg) {
