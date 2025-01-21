@@ -1,6 +1,4 @@
 package bgu.spl.net.impl.stomp;
-
-import bgu.spl.net.impl.echo.LineMessageEncoderDecoder;
 import bgu.spl.net.srv.Server;
 
 public class StompServer {
@@ -19,14 +17,14 @@ public class StompServer {
             server = Server.threadPerClient(
                 port,
                 () -> new StompProtocol(),
-                StompEncoderDecoder::new
+                StompMessageEncoderDecoder::new
             );
         } else if ("reactor".equalsIgnoreCase(serverType)) { 
             server = Server.reactor(
                 Runtime.getRuntime().availableProcessors(),
                 port,
                 StompProtocol::new,
-                StompEncoderDecoder::new
+                StompMessageEncoderDecoder::new
             );
         } else {
             System.out.println("Invalid server type. Use 'tpc' or 'reactor'.");
