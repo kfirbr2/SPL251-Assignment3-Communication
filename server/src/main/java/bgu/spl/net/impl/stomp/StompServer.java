@@ -41,5 +41,4 @@ public class StompServer {
 
         server.serve();
     }
-
 }
