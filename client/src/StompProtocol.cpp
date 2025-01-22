@@ -36,7 +36,6 @@ vector<string> StompProtocol::generteFrame(vector<string> args, string userName)
     }
     else if (args.at(0) == "report")
     {
-        vector<string> frames;
         names_and_events eventsAndNames = parseEventsFile(args.at(1));
         vector<Event> newEvents = eventsAndNames.events;
         string channel = eventsAndNames.channel_name;

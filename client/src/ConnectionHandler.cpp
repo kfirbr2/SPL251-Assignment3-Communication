@@ -1,4 +1,5 @@
 #include "../include/ConnectionHandler.h"
+#include "ConnectionHandler.h"
 
 using boost::asio::ip::tcp;
 
@@ -114,4 +115,9 @@ void ConnectionHandler::close() {
 	} catch (...) {
 		std::cout << "closing failed: connection already closed" << std::endl;
 	}
+}
+
+bool ConnectionHandler::isConnected()
+{
+    return socket_.is_open();
 }
