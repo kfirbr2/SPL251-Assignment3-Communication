@@ -119,5 +119,8 @@ void ConnectionHandler::close() {
 
 bool ConnectionHandler::isConnected()
 {
-    return socket_.is_open();
+    if(socket_.available()>0){
+		return true;
+	}
+	return false;
 }
