@@ -1,3 +1,4 @@
+#pragma once
 #include "../include/event.h"
 #include "../include/json.hpp"
 #include <iostream>
@@ -143,4 +144,13 @@ names_and_events parseEventsFile(std::string json_path)
     names_and_events events_and_names{channel_name, events};
 
     return events_and_names;
+}
+bool Event::isActive() const {
+    auto it = general_information.find("active");
+    return (it != general_information.end() && it->second == "true");
+}
+
+bool Event::isForcesArrival() const {
+    auto it = general_information.find("forces_arrival_at_scene");
+    return (it != general_information.end() && it->second == "true");
 }

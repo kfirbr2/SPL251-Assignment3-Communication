@@ -1,68 +1,79 @@
 #include <iostream>
+#include <thread>
+#include <mutex>
+#include <vector>
+#include <queue>
+#include <string>
 #include <sstream>
 #include "../include/StompProtocol.h"
 #include "../include/ConnectionHandler.h"
+#include "../include/keyboardInput.h"
+#include "../include/event.h"
 
 
-// StompClient::StompClient() 
-    // : connection(nullptr), connected(false), protocol() {
-		// protocol = new StompProtocol();
-	//   }
-
-	StompProtocol protocol;
-
-// StompClient::~StompClient() {
-    // if (connection) {
-        // delete connection;
-        // connection = nullptr;
-		// delete protocol;
-		// protocol = nullptr;
-    // }
-// }
+StompProtocol protocol;
+bool isLoggedIn = false;
+bool isError = false;
+bool connected = true;
 
 
-void StompClient::listenToServer() {
-    while (connectionHandler!= nullptr && connectionHandler->isConnected()) {
+
+
+void listenToServer(std::shared_ptr<ConnectionHandler> connectionHandler ) {
+    while (isLoggedIn && !isError) {
         std::string response;
 		if(connectionHandler->getMessage(response)){
 			if (!response.empty()) {
 				protocol.process(connectionHandler);
 			}
+			if(!protocol.getIsError()){
+				isError = true;
+				
+			}
 		}
 	}
+	if(isError){
+		connectionHandler->close();
+		connectionHandler = nullptr;
+        connected = false;
+	}
+	else{
+		connectionHandler->close();
+        connectionHandler = nullptr;
+	}
+}
 
 
 
 // Main function
 int main(int argc, char *argv[]) {
-    ConnectionHandler *connectHandller = nullptr;
-	queue<String> messages; 
+	vector<string> lineArgs; 
 	string outputMsg;
 	string inputMsg;
 	string host;
 	short port;
-	thread connectionThread; 
-	StompProtocol protocol;
-	bool connected = true;
+	shared_ptr<ConnectionHandler> connectionHandler;
+	//StompProtocol protocol;
 	string userName;
+	string passcode;
+	mutex mtx;
 
 	while(connected){
-		getline(cin,input);
-		split_str(input, ' ', lineArgs);
+		getline(cin,inputMsg);
+		split_str(inputMsg, ' ', lineArgs);
 		string command = lineArgs.at(0);
-		if(commaned !="login"){
+		if(command !="login"){
 		if(isLoggedIn){
 			cout<<"please log in first"<<endl;
 			continue;
 		}
 		 if (command == "join" && lineArgs.at(1) != "")
             {
-                queueMutex.lock();
+				std::lock_guard<std::mutex> lock(mtx);				
 				vector<string> frames = protocol.generteFrame(lineArgs, userName);
-				for (const string &frame : frames) {
-					queueMessages.push(frame);
+				for (string &frame : frames) {
+					connectionHandler->sendMessage(frame);
 					}
-                queueMutex.unlock();
             }
 			else if (lineArgs.at(1) == "")
 			{
@@ -72,12 +83,11 @@ int main(int argc, char *argv[]) {
 			{
 				if (lineArgs.at(1) != "")
 				{
-					queueMutex.lock();
+					std::lock_guard<std::mutex> lock(mtx);				
 					vector<string> frames = protocol.generteFrame(lineArgs, userName);
-					for (const string &frame : frames) {
-					queueMessages.push(frame);
-					}
-					queueMutex.unlock();
+					for (string &frame : frames) {
+					connectionHandler->sendMessage(frame);
+					}					
 					}
 				else
 					cout << "exit need 1 args {topic}" << endl;
@@ -86,13 +96,11 @@ int main(int argc, char *argv[]) {
 			{
 				if (lineArgs.at(1) != "")
 				{
-					queueMutex.lock();
-					vector<string> frames = protocol.generteFrame("json_path", userName);
-					for (string report : frames)
-					{
-						queueMessages.push(report);
+					std::lock_guard<std::mutex> lock(mtx);				
+					vector<string> frames = protocol.generteFrame(lineArgs, userName);
+					for (string &frame : frames) {
+					connectionHandler->sendMessage(frame);
 					}
-					queueMutex.unlock();
 				}
 				cout << "report need 1 args {file}" << endl;
 			}
@@ -100,7 +108,7 @@ int main(int argc, char *argv[]) {
 			{
 				if (lineArgs.at(1) != "" && lineArgs.at(2) != "" && lineArgs.at(3) != "")
 				{
-					protocol.generteFrame(lineArgs);
+					protocol.generteFrame(lineArgs, userName);
 				}
 				else
 				{
@@ -109,38 +117,38 @@ int main(int argc, char *argv[]) {
 			}
 			else if (command == "logout")
 			{
-				queueMutex.lock();
+				std::lock_guard<std::mutex> lock(mtx);				
 				vector<string> frames = protocol.generteFrame(lineArgs, userName);
-				for (const string &frame : frames) {
-					queueMessages.push(frame);
+				for (string &frame : frames) {
+					connectionHandler->sendMessage(frame);
 					}
-				queueMutex.unlock();
-					// connectionHandler->close();
-					// connectionHandler = nullptr;
+					isLoggedIn = false;
 				}
 				else
 				{
 					std::cerr << "Failed to confirm logout. Connection remains open." << std::endl;
 				}
 			}
-			else
-			{
-				std::cout << "No active connection to logout from." << std::endl;
-			}
-
-	}
-	else if (command == "login")
+			else if (command == "login")
 	{
 		if (lineArgs.at(1) != "")
 		{
-			host = lineArgs.at(1);
-			port = stoi(lineArgs.at(2));
-			userName = lineArgs.at(3);
-			connectionHandler = new ConnectionHandler(host, port);
+			vector<string> portAndHost;
+			split_str(lineArgs[1], ':',portAndHost);
+			host = portAndHost[0];
+			port = stoi(portAndHost[1]);
+			userName = lineArgs.at(2);
+			passcode = lineArgs.at(3);
+
+			string frame;
+            frame = "CONNECT\naccept: version :1.2" "\n\nhost:" +host +"\n"+ "login:" + userName + "\n"+"passcode:" +passcode + "\n\n\0";
+			connectionHandler = std::make_shared<ConnectionHandler>(host, port);
+			connectionHandler->sendMessage(frame);
 			if (connectionHandler->connect())
 			{
 				isLoggedIn = true;
-				connectionThread = thread(&ConnectionHandler::run, connectionHandler);
+				thread serverThread(listenToServer, connectionHandler);
+				serverThread.join();
 			}
 			else
 			{
@@ -152,10 +160,15 @@ int main(int argc, char *argv[]) {
 			std::cerr << "login need 3 args: {host} {port} {username}" << std::endl;
 		}
 	}
+	
 	else
 	{
 		std::cerr << "Invalid command." << std::endl;
 	}
+	}
+
+    return 0;
+} 
 
 	
 	

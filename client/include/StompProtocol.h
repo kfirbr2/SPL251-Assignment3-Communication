@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <memory>       
 #include "ConnectionHandler.h" 
+#include "event.h"
 using namespace std;
 class StompProtocol {
 public:
@@ -13,6 +14,7 @@ public:
     void generateSummary(const std::string& user, const std::string& channel, const std::string& file);
     bool getShouldTerminate();
     void setShouldTerminate(bool terminate);
+    bool getIsError();
 
 private: 
 int subscriptionId = 0;

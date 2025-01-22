@@ -8,7 +8,9 @@
 #include <sstream>
 #include <iostream>
 #include <chrono>
+using namespace std;
 
+StompProtocol::StompProtocol(): subscriptionId(0), receiptId(0), logout(0), shouldTerminate(false), isError(false), subscriptionIdMap(), userMap(), usersReportMap() {}
 
 vector<string> StompProtocol::generteFrame(vector<string> args, string userName){
     vector<string> frames;
@@ -96,17 +98,17 @@ void StompProtocol::process(shared_ptr<ConnectionHandler> &connectionHandler)
             // Read the first line to determine the STOMP frame type
             if (std::getline(responseStream, line))
             {
-                std::string frameType = line;
-                if(frameType == "SUBSCRIBE")
+                std::string command = line;
+                if(command == "SUBSCRIBE")
                 {
                     cout << "Subscribed to " << subscriptionIdMap.find(subscriptionId)->second << endl;
                 }
-                if(frameType == "UNSUBSCRIBE")
+                if(command == "UNSUBSCRIBE")
                 {
                     cout << "Unsubscribed from " << subscriptionIdMap.find(subscriptionId)->second << endl;
                 }
                 // Only proceed if the frame type is RECEIPT
-                if (frameType == "RECEIPT")
+                if (command == "RECEIPT")
                 {
                     // Parse the headers
                     while (std::getline(responseStream, line) && !line.empty())
@@ -141,7 +143,7 @@ void StompProtocol::process(shared_ptr<ConnectionHandler> &connectionHandler)
                         std::cerr << "RECEIPT frame received but no receipt-id header found." << std::endl;
                     }
                 }
-                else if (frameType == "ERROR")
+                else if (command == "ERROR")
                 {
                     isError = true;
                 }
@@ -169,8 +171,8 @@ void StompProtocol::generateSummary(const std::string& user, const std::string& 
     }
 
     int totalReports = events.size();
-    int activeCount = std::count_if(events.begin(), events.end(), [](const Event& e) { return e.isActive(); });
-    int forcesArrivalCount = std::count_if(events.begin(), events.end(), [](const Event& e) { return e.isForcesArrival(); });
+    int activeCount = std::count_if(events.begin(), events.end(), [](Event& e) { return e.isActive(); });
+    int forcesArrivalCount = std::count_if(events.begin(), events.end(), [](Event& e) { return e.isForcesArrival(); });
 
     outputFile << "Channel " << channel << "\n";
     outputFile << "Stats:\n";
@@ -199,4 +201,8 @@ bool StompProtocol::getShouldTerminate()
 void StompProtocol::setShouldTerminate(bool terminate)
 {
     shouldTerminate = terminate;
+}
+bool StompProtocol::getIsError()
+{
+    return isError;
 }
