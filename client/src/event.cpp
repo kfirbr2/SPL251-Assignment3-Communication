@@ -10,6 +10,7 @@
 #include <cstring>
 
 #include "../include/keyboardInput.h"
+#include "event.h"
 
 using namespace std;
 using json = nlohmann::json;
@@ -56,6 +57,18 @@ int Event::get_date_time() const
 const std::map<std::string, std::string> &Event::get_general_information() const
 {
     return this->general_information;
+}
+
+bool Event::isActive() const
+{
+    auto it = general_information.find("active");
+    return (it != general_information.end() && it->second == "true");
+}
+
+bool Event::isForcesArrival() const
+{    
+    auto it = general_information.find("forces_arrival_at_scene");
+    return (it != general_information.end() && it->second == "true");
 }
 
 const std::string &Event::get_description() const
@@ -145,12 +158,4 @@ names_and_events parseEventsFile(std::string json_path)
 
     return events_and_names;
 }
-bool Event::isActive() const {
-    auto it = general_information.find("active");
-    return (it != general_information.end() && it->second == "true");
-}
 
-bool Event::isForcesArrival() const {
-    auto it = general_information.find("forces_arrival_at_scene");
-    return (it != general_information.end() && it->second == "true");
-}

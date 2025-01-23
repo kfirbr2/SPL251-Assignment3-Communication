@@ -1,6 +1,7 @@
 package bgu.spl.net.impl.stomp;
 
 import bgu.spl.net.api.StompMessagingProtocol;
+import bgu.spl.net.srv.ConnectionImpl;
 import bgu.spl.net.srv.Connections;
 
 public class StompProtocol<T> implements StompMessagingProtocol<T> {
@@ -25,19 +26,19 @@ public class StompProtocol<T> implements StompMessagingProtocol<T> {
         String command = parts[0];
         switch (command) {
             case "CONNECT":
-                Handlers.handleConnect(parts, connectionId, connections,this);
+                Handlers.handleConnect(parts, connectionId, connections, this);
                 break;
             case "DISCONNECT":
                 Handlers.handleDisconnect(parts, connectionId, connections, this);
                 break;
             case "SUBSCRIBE":
-                Handlers.handleSubscribe(parts, connectionId, connections,this);
+                Handlers.handleSubscribe(parts, connectionId, connections, this);
                 break;
             case "UNSUBSCRIBE":
                 Handlers.handleUnsubscribe(parts, connectionId, connections);
                 break;
             case "SEND":
-                Handlers.handleSend(parts, connectionId, connections,this);
+                Handlers.handleSend(parts, connectionId, connections, this);
                 break;
             default:
                 Handlers.handleError("wrong headframe",connectionId,connections,null, this);

@@ -1,5 +1,4 @@
 #pragma once
-
 #include <string>
 #include <iostream>
 #include <map>
@@ -34,6 +33,9 @@ public:
     const std::string &get_name() const;
     int get_date_time() const;
     const std::map<std::string, std::string> &get_general_information() const;
+    bool isActive() const;
+    bool isForcesArrival() const;
+
 };
 
 // an object that holds the names of the teams and a vector of events, to be returned by the parseEventsFile function
