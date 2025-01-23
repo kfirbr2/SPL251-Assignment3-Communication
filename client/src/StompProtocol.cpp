@@ -171,9 +171,18 @@ void StompProtocol::generateSummary(const std::string& user, const std::string& 
     }
 
     int totalReports = events.size();
-    int activeCount = std::count_if(events.begin(), events.end(), [](Event& e) { return e.isActive(); });
-    int forcesArrivalCount = std::count_if(events.begin(), events.end(), [](Event& e) { return e.isForcesArrival(); });
+    int activeCount = 0;
+    int forcesArrivalCount = 0;
 
+    for (const auto& event : events) {
+        if (event.isActive()) {
+            activeCount++;
+        }
+        if (event.isForcesArrival()) {
+            forcesArrivalCount++;
+        }
+    }
+    
     outputFile << "Channel " << channel << "\n";
     outputFile << "Stats:\n";
     outputFile << "Total: " << totalReports << "\n";

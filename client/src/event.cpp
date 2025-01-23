@@ -1,4 +1,4 @@
-#pragma once
+
 #include "../include/event.h"
 #include "../include/json.hpp"
 #include <iostream>
@@ -35,7 +35,7 @@ const std::string &Event::getEventOwnerUser() const {
 
 const std::string &Event::get_channel_name() const
 {
-    return this->channel_name;
+    return this->channel_name; 
 }
 
 const std::string &Event::get_city() const
