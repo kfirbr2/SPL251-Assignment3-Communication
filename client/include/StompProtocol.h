@@ -12,6 +12,7 @@ public:
     vector<string> generteFrame(vector<string> args, string userName);
     void process(shared_ptr<ConnectionHandler> &connectionHandler); 
     void generateSummary(const std::string& user, const std::string& channel, const std::string& file);
+    void processMessage(const std::string& serverResponse);
     bool getShouldTerminate();
     void setShouldTerminate(bool terminate);
     bool getIsError();

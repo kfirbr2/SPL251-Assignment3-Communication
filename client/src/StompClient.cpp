@@ -58,7 +58,8 @@ int main(int argc, char *argv[]) {
 	string passcode;
 	mutex mtx;
 
-	while(connected){
+	while(connected){ 
+		lineArgs.clear();
 		getline(cin,inputMsg);
 		split_str(inputMsg, ' ', lineArgs);
 		cout<<lineArgs.size()<<endl;
@@ -142,21 +143,22 @@ int main(int argc, char *argv[]) {
 			passcode = lineArgs.at(3);
 
 			string frame;
-            frame = "CONNECT\naccept-version:1.2\nhost:stomp.cs.bgu.ac.il\nlogin:" + userName + "\n"+"passcode:" + passcode + "\n\n" +'\0';
+            frame = "CONNECT\n"
+           "accept-version:1.2\n"
+           "host:stomp.cs.bgu.ac.il\n"
+           "login:" + userName + "\n"
+           "passcode:" + passcode + "\n\n\0"; 
 			connectionHandler = std::make_shared<ConnectionHandler>(host, port);
 			cout<<" host: "<<host<<" port: "<<port<<endl;
 			cout << "login frame: " << frame << endl;
-
-			connectionHandler->sendMessage(frame);
-			if (connectionHandler->connect())
-			{
+			if(!connectionHandler->connect()){
+				std::cerr << "Could not connect to server" << std::endl;
+			}
+			else{
+				connectionHandler->sendMessage(frame);
 				isLoggedIn = true;
 				thread serverThread(listenToServer, connectionHandler);
 				serverThread.join();
-			}
-			else
-			{
-				std::cerr << "Failed to connect to server." << std::endl;
 			}
 		}
 		else

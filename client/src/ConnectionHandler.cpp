@@ -51,6 +51,8 @@ bool ConnectionHandler::getBytes(char bytes[], unsigned int bytesToRead) {
 }
 
 bool ConnectionHandler::sendBytes(const char bytes[], int bytesToWrite) {
+	cout<<bytes<<endl;
+	cout<<bytesToWrite<<endl;
 	int tmp = 0;
 	boost::system::error_code error;
 	try {
@@ -122,7 +124,7 @@ void ConnectionHandler::close() {
 
 bool ConnectionHandler::isConnected()
 {
-    if(socket_.available()>0){
+    if(socket_.is_open() && socket_.available()>0 ){
 		return true;
 	}
 	return false;

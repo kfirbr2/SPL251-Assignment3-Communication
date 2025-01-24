@@ -99,13 +99,13 @@ void StompProtocol::process(shared_ptr<ConnectionHandler> &connectionHandler)
             if (std::getline(responseStream, line))
             {
                 std::string command = line;
-                if(command == "SUBSCRIBE")
+                if(command == "CONNECTED")
                 {
-                    cout << "Subscribed to " << subscriptionIdMap.find(subscriptionId)->second << endl;
+                    std::cout << "Login successful" << std::endl;
                 }
-                if(command == "UNSUBSCRIBE")
+                if(command == "MESSAGE")
                 {
-                    cout << "Unsubscribed from " << subscriptionIdMap.find(subscriptionId)->second << endl;
+                    processMessage(serverResponse);
                 }
                 // Only proceed if the frame type is RECEIPT
                 if (command == "RECEIPT")
@@ -202,6 +202,56 @@ void StompProtocol::generateSummary(const std::string& user, const std::string& 
     outputFile.close();
     std::cout << "[Summary] Successfully written summary to " << file << std::endl;
 }
+
+
+void StompProtocol::processMessage(const std::string& serverResponse){
+    std::istringstream responseStream(serverResponse);
+    std::string line;
+    std::map<std::string, std::string> headers;
+    std::string body;
+
+    bool parsingHeaders = true;
+
+    // Parse STOMP headers and body
+    while (std::getline(responseStream, line)) {
+        if (line.empty()) {
+            parsingHeaders = false; // Blank line indicates start of body
+            continue;
+        }
+
+        if (parsingHeaders) {
+            size_t colonPos = line.find(':');
+            if (colonPos != std::string::npos) {
+                std::string key = line.substr(0, colonPos);
+                std::string value = line.substr(colonPos + 1);
+                headers[key] = value;
+            }
+        } else {
+            body += line + "\n"; // Collecting message body
+        }
+    }
+
+    // Extract necessary fields
+    std::string topic = headers.count("destination") ? headers.at("destination") : "Unknown Topic";
+    std::string user = headers.count("user") ? headers.at("user") : "Unknown User";
+    std::string city = headers.count("city") ? headers.at("city") : "Unknown Location";
+    std::string eventName = headers.count("event name") ? headers.at("event name") : "Unknown Event";
+    std::string dateTime = headers.count("date time") ? headers.at("date time") : "Unknown Time";
+    bool active = headers.count("active") && headers.at("active") == "true";
+    bool forcesArrived = headers.count("forces_arrival_at_scene") && headers.at("forces_arrival_at_scene") == "true";
+
+    // Print the formatted message
+    std::cout << "[" << topic << "] New Emergency Report" << std::endl;
+    std::cout << "Reporter: " << user << std::endl;
+    std::cout << "Location: " << city << std::endl;
+    std::cout << "Date/Time: " << dateTime << std::endl;
+    std::cout << "Event: " << eventName << std::endl;
+    std::cout << "Description: " << body << std::endl;
+    std::cout << "Active: " << (active ? "Yes" : "No") 
+              << " | Forces on Scene: " << (forcesArrived ? "Yes" : "No") << std::endl;
+    std::cout << "--------------------------------------------" << std::endl;
+}
+
 bool StompProtocol::getShouldTerminate()
 {
     return shouldTerminate;
