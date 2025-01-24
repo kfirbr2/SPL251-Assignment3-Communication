@@ -10,7 +10,7 @@
 #include <chrono>
 using namespace std;
 
-StompProtocol::StompProtocol(): subscriptionId(0), receiptId(0), logout(0), shouldTerminate(false), isError(false), subscriptionIdMap(), userMap(), usersReportMap() {}
+StompProtocol::StompProtocol(): subscriptionId(0), receiptId(0), logout(0), shouldTerminate(false), isError(false), subscribeReceiptIdMap(), unsubscribeReceiptIdMap() ,userMap(), usersReportMap() {}
 
 vector<string> StompProtocol::generteFrame(vector<string> args, string userName){
     vector<string> frames;
@@ -18,14 +18,16 @@ vector<string> StompProtocol::generteFrame(vector<string> args, string userName)
     if (!args.empty() && args.at(0) == "join"){
         receiptId++;
         subscriptionId++;
-        subscriptionIdMap.insert({subscriptionId, args.at(1)});
+        subscribeReceiptIdMap.insert({receiptId, args.at(1)});
         userMap[userName].insert({args.at(1), subscriptionId});
         frame = "SUBSCRIBE\ndestination:" + args.at(1) + "\nid:" + to_string(subscriptionId) + "\n" +"receipt:" + to_string(receiptId) + "\n" +"\n\0";
         frames.push_back(frame);
     }
     else if (!args.empty() && args.at(0) == "exit"){
         receiptId++;
+        unsubscribeReceiptIdMap.insert({receiptId, args.at(1)});
         int id = userMap[userName][args.at(1)];
+        userMap[userName].erase(args.at(1));
         frame = "UNSUBSCRIBE\nid:" + to_string(id) + "\n" +"receipt:" + to_string(receiptId) + "\n" + "\n\0";
         frames.push_back(frame);
     }
@@ -133,6 +135,18 @@ void StompProtocol::process(shared_ptr<ConnectionHandler> &connectionHandler)
                             std::cout << "Logout confirmed. Terminating connection." << std::endl;
                             setShouldTerminate(true); 
                         }
+                        else if (subscribeReceiptIdMap.find(receiptId) != subscribeReceiptIdMap.end())
+                        {
+                                std::string channel = subscribeReceiptIdMap[receiptId];
+                                std::cout << "Joined channel " << channel  << std::endl;
+                            
+                        }
+                        else if(unsubscribeReceiptIdMap.find(receiptId) != unsubscribeReceiptIdMap.end())
+                        {
+                            std::string channel = unsubscribeReceiptIdMap[receiptId];
+                            std::cout << "Exited channel " << channel << std::endl;
+                        }
+                    
                         else
                         {
                             std::cout << "Received receipt-id: " << receiptId << ", but it does not match logoutId: " << logout << std::endl;
@@ -264,4 +278,9 @@ void StompProtocol::setShouldTerminate(bool terminate)
 bool StompProtocol::getIsError()
 {
     return isError;
+}
+
+void StompProtocol::deleteFromUserMap(string userName)
+{
+    userMap.erase(userName);
 }

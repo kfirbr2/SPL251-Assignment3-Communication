@@ -15,6 +15,7 @@ StompProtocol protocol;
 bool isLoggedIn = false;
 bool isError = false;
 bool connected = true;
+string userName;
 
 
 
@@ -33,11 +34,13 @@ void listenToServer(std::shared_ptr<ConnectionHandler> connectionHandler ) {
 		}
 	}
 	if(isError){
+		protocol.deleteFromUserMap(userName);
 		connectionHandler->close();
 		connectionHandler = nullptr;
         connected = false;
 	}
 	else{
+		protocol.deleteFromUserMap(userName);
 		connectionHandler->close();
         connectionHandler = nullptr;
 	}
@@ -54,7 +57,6 @@ int main(int argc, char *argv[]) {
 	short port;
 	shared_ptr<ConnectionHandler> connectionHandler;
 	//StompProtocol protocol;
-	string userName;
 	string passcode;
 	mutex mtx;
 

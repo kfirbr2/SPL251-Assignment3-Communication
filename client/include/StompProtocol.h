@@ -16,6 +16,7 @@ public:
     bool getShouldTerminate();
     void setShouldTerminate(bool terminate);
     bool getIsError();
+    void deleteFromUserMap(string userName);
 
 private: 
 int subscriptionId = 0;
@@ -23,7 +24,8 @@ int receiptId = 0;
 int logout = 0;
 bool shouldTerminate = false;
 bool isError = false;
-unordered_map<int, string> subscriptionIdMap;
+unordered_map<int, string> subscribeReceiptIdMap;
+unordered_map<int, string> unsubscribeReceiptIdMap;
 unordered_map<string,unordered_map<string, int>> userMap;
 unordered_map<string, unordered_map<string, vector<Event>>> usersReportMap;
 
