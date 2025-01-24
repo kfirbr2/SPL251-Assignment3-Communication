@@ -19,6 +19,7 @@ ConnectionHandler::~ConnectionHandler() {
 bool ConnectionHandler::connect() {
 	std::cout << "Starting connect to "
 	          << host_ << ":" << port_ << std::endl;
+			  
 	try {
 		tcp::endpoint endpoint(boost::asio::ip::address::from_string(host_), port_); // the server endpoint
 		boost::system::error_code error;
@@ -66,15 +67,16 @@ bool ConnectionHandler::sendBytes(const char bytes[], int bytesToWrite) {
 }
 
 bool ConnectionHandler::getLine(std::string &line) {
-	return getFrameAscii(line, '\n');
+	return getFrameAscii(line, '\0');
 }
 
 bool ConnectionHandler::sendLine(std::string &line) {
-	return sendFrameAscii(line, '\n');
+	return sendFrameAscii(line, '\0');
 }
 
 bool ConnectionHandler::sendMessage(std::string &message)
 {
+	cout<<message<<endl;
 	return sendFrameAscii(message, '\0');
 }
 
@@ -103,6 +105,7 @@ bool ConnectionHandler::getFrameAscii(std::string &frame, char delimiter) {
 }
 
 bool ConnectionHandler::sendFrameAscii(const std::string &frame, char delimiter) {
+	cout<<frame<<endl;
 	bool result = sendBytes(frame.c_str(), frame.length());
 	if (!result) return false;
 	return sendBytes(&delimiter, 1);

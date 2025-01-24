@@ -7,7 +7,7 @@
 #include <sstream>
 #include "../include/StompProtocol.h"
 #include "../include/ConnectionHandler.h"
-#include "../include/keyboardInput.h"
+#include "../include/KeyBoardInput.h"
 #include "../include/event.h"
 
 
@@ -61,6 +61,7 @@ int main(int argc, char *argv[]) {
 	while(connected){
 		getline(cin,inputMsg);
 		split_str(inputMsg, ' ', lineArgs);
+		cout<<lineArgs.size()<<endl;
 		string command = lineArgs.at(0);
 		if(command !="login"){
 		if(isLoggedIn){
@@ -141,8 +142,11 @@ int main(int argc, char *argv[]) {
 			passcode = lineArgs.at(3);
 
 			string frame;
-            frame = "CONNECT\naccept: version :1.2" "\n\nhost:" +host +"\n"+ "login:" + userName + "\n"+"passcode:" +passcode + "\n\n\0";
+            frame = "CONNECT\naccept-version:1.2\nhost:stomp.cs.bgu.ac.il\nlogin:" + userName + "\n"+"passcode:" + passcode + "\n\n" +'\0';
 			connectionHandler = std::make_shared<ConnectionHandler>(host, port);
+			cout<<" host: "<<host<<" port: "<<port<<endl;
+			cout << "login frame: " << frame << endl;
+
 			connectionHandler->sendMessage(frame);
 			if (connectionHandler->connect())
 			{

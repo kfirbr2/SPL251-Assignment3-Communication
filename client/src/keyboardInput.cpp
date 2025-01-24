@@ -1,19 +1,21 @@
-#include "../include/keyboardInput.h"
+#include "../include/KeyBoardInput.h"
+#include <vector>
+#include <string>
 
-void split_str(string line, char sign, vector<string> lineArgs)
+void split_str(std::string line, char sign, std::vector<std::string>& lineArgs)
 {
-    int i = 0;
-    string args = "";
-    for (int j = 0; j < line.length(); j++)
+    std::string word = "";
+    for (auto x : line)
     {
-        if(line.at(j) == sign)
+        if (x == sign)
         {
-            lineArgs.at(i) = args;
-            i += 1;
+            lineArgs.push_back(word);
+            word = "";
         }
         else
-        args += line.at(j);
+        {
+            word = word + x;
+        }
     }
-    lineArgs.at(i) = args;
+    lineArgs.push_back(word);
 }
-

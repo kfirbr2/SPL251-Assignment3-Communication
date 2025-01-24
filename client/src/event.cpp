@@ -9,7 +9,7 @@
 #include <sstream>
 #include <cstring>
 
-#include "../include/keyboardInput.h"
+#include "../include/KeyBoardInput.h"
 #include "event.h"
 
 using namespace std;

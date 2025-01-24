@@ -15,7 +15,7 @@ StompProtocol::StompProtocol(): subscriptionId(0), receiptId(0), logout(0), shou
 vector<string> StompProtocol::generteFrame(vector<string> args, string userName){
     vector<string> frames;
     string frame = "";
-    if (args.at(0) == "join"){
+    if (!args.empty() && args.at(0) == "join"){
         receiptId++;
         subscriptionId++;
         subscriptionIdMap.insert({subscriptionId, args.at(1)});
@@ -23,20 +23,20 @@ vector<string> StompProtocol::generteFrame(vector<string> args, string userName)
         frame = "SUBSCRIBE\ndestination:" + args.at(1) + "\nid:" + to_string(subscriptionId) + "\n" +"receipt:" + to_string(receiptId) + "\n" +"\n\0";
         frames.push_back(frame);
     }
-    else if (args.at(0) == "exit"){
+    else if (!args.empty() && args.at(0) == "exit"){
         receiptId++;
         int id = userMap[userName][args.at(1)];
         frame = "UNSUBSCRIBE\nid:" + to_string(id) + "\n" +"receipt:" + to_string(receiptId) + "\n" + "\n\0";
         frames.push_back(frame);
     }
-    else if (args.at(0) == "logout")
+    else if (!args.empty() && args.at(0) == "logout")
     {
         receiptId++;
         string frame = "DISCONNECT\nreceipt-id:" + to_string(receiptId) + "\n\n\0";
         logout= receiptId;
         frames.push_back(frame);
     }
-    else if (args.at(0) == "report")
+    else if (!args.empty() && args.at(0) == "report")
     {
         names_and_events eventsAndNames = parseEventsFile(args.at(1));
         vector<Event> newEvents = eventsAndNames.events;
@@ -71,7 +71,7 @@ vector<string> StompProtocol::generteFrame(vector<string> args, string userName)
             frames.push_back(frame.str());
         }
     }
-     else if (args.at(0) == "summary") {
+     else if (!args.empty() && args.at(0) == "summary") {
         string user = args.at(1);
         string channel = args.at(2);
         string file = args.at(3);

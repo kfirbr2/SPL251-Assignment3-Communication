@@ -4,4 +4,4 @@
 #include <string>
 using namespace std;
 
-void split_str(string line, char sign, vector<string> lineArgs);
+void split_str(std::string line, char sign, std::vector<std::string>& lineArgs);
