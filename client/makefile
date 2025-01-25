@@ -4,7 +4,7 @@ LDFLAGS:=-lboost_system -lpthread
 all: StompEMIClient
 
 StompEMIClient: bin/ConnectionHandler.o bin/event.o bin/StompClient.o bin/StompProtocol.o bin/KeyBoardInput.o
-	g++ -o bin/StompEMIClient bin/ConnectionHandler.o bin/event.o bin/StompClient.o bin/StompProtocol.o bin/KeyBoardInput.o $(LDFLAGS)
+	g++ -o bin/StompEMIClient.o bin/ConnectionHandler.o bin/event.o bin/StompClient.o bin/StompProtocol.o bin/KeyBoardInput.o $(LDFLAGS)
 
 EchoClient: bin/ConnectionHandler.o bin/echoClient.o
 	g++ -o bin/EchoClient bin/ConnectionHandler.o bin/echoClient.o $(LDFLAGS)

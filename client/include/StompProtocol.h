@@ -2,7 +2,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
-#include <memory>       
+#include <memory> 
 #include "ConnectionHandler.h" 
 #include "event.h"
 using namespace std;
@@ -10,9 +10,11 @@ class StompProtocol {
 public:
     StompProtocol();
     vector<string> generteFrame(vector<string> args, string userName);
-    void process(shared_ptr<ConnectionHandler> &connectionHandler); 
+    void process(shared_ptr<ConnectionHandler> &connectionHandler, string serverResponse); 
+    bool containsWord(const std::string &text, const std::string &word);
     void generateSummary(const std::string& user, const std::string& channel, const std::string& file);
     void processMessage(const std::string& serverResponse);
+    std::string convertTimestampToDateTime(int timestamp);
     bool getShouldTerminate();
     void setShouldTerminate(bool terminate);
     bool getIsError();
@@ -31,5 +33,3 @@ unordered_map<string, unordered_map<string, vector<Event>>> usersReportMap;
 
 
 };
-
-

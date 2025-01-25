@@ -8,11 +8,15 @@
 #include <sstream>
 #include <iostream>
 #include <chrono>
+#include <iostream>
+#include <ctime>
+#include <iomanip>
 using namespace std;
 
 StompProtocol::StompProtocol(): subscriptionId(0), receiptId(0), logout(0), shouldTerminate(false), isError(false), subscribeReceiptIdMap(), unsubscribeReceiptIdMap() ,userMap(), usersReportMap() {}
 
 vector<string> StompProtocol::generteFrame(vector<string> args, string userName){
+    printf("generteFrame");
     vector<string> frames;
     string frame = "";
     if (!args.empty() && args.at(0) == "join"){
@@ -34,9 +38,12 @@ vector<string> StompProtocol::generteFrame(vector<string> args, string userName)
     else if (!args.empty() && args.at(0) == "logout")
     {
         receiptId++;
-        string frame = "DISCONNECT\nreceipt-id:" + to_string(receiptId) + "\n\n\0";
+        printf("logout protocol");
+        string frame = "DISCONNECT\nreceipt:" + to_string(receiptId) + "\n\n\0";
+        printf("logout protocol2");
         logout= receiptId;
         frames.push_back(frame);
+        printf("logout protocol3");
     }
     else if (!args.empty() && args.at(0) == "report")
     {
@@ -57,7 +64,7 @@ vector<string> StompProtocol::generteFrame(vector<string> args, string userName)
             frame << "SEND\n"
                   << "destination:/" << currentEvent.get_channel_name() << "\n\n"
                   << "user:" << userName << "\n"
-                  << "channel name:" << currentEvent.get_channel_name() << "\n"
+                  << "channel name:/" << currentEvent.get_channel_name() << "\n"
                   << "city:" << currentEvent.get_city() << "\n"
                   << "event name:" << currentEvent.get_name() << "\n"
                   << "date time:" << currentEvent.get_date_time() << "\n"
@@ -77,7 +84,7 @@ vector<string> StompProtocol::generteFrame(vector<string> args, string userName)
         string user = args.at(1);
         string channel = args.at(2);
         string file = args.at(3);
-        generateSummary(user, channel, file);
+        generateSummary(channel, user, file);
     }
     else {
         std::cout << "[Error] Invalid command.\n";
@@ -85,13 +92,9 @@ vector<string> StompProtocol::generteFrame(vector<string> args, string userName)
     
     return frames;
 }
-void StompProtocol::process(shared_ptr<ConnectionHandler> &connectionHandler)
+void StompProtocol::process(shared_ptr<ConnectionHandler> &connectionHandler, string serverResponse)
 {
-    // Listen for server messages
-    string serverResponse;
-    if (connectionHandler->getMessage(serverResponse))
     {
-            std::cout << "Server: " << serverResponse << std::endl;
             // Parse server response
             std::istringstream responseStream(serverResponse);
             std::string line;
@@ -104,6 +107,7 @@ void StompProtocol::process(shared_ptr<ConnectionHandler> &connectionHandler)
                 if(command == "CONNECTED")
                 {
                     std::cout << "Login successful" << std::endl;
+                    // logIn = true;
                 }
                 if(command == "MESSAGE")
                 {
@@ -125,6 +129,7 @@ void StompProtocol::process(shared_ptr<ConnectionHandler> &connectionHandler)
                     }
 
                     // Check for the receipt-id header
+                    printf("receipt protocol");
                     auto receiptIdIt = headers.find("receipt-id");
                     if (receiptIdIt != headers.end())
                     {
@@ -158,7 +163,20 @@ void StompProtocol::process(shared_ptr<ConnectionHandler> &connectionHandler)
                     }
                 }
                 else if (command == "ERROR")
+                
                 {
+                    if(containsWord(serverResponse, "message:User already logged in"))
+                    {
+                        cout<<"User already logged in" <<endl;
+                    }
+                    else if(containsWord(serverResponse, "message:Password does not match UserName"))
+                    {
+                        cout<<"Wrong password" <<endl;
+                    }
+                    else
+                    {
+                        std::cerr << "Error: " << serverResponse << std::endl;
+                    }
                     isError = true;
                 }
             }
@@ -167,7 +185,11 @@ void StompProtocol::process(shared_ptr<ConnectionHandler> &connectionHandler)
                 std::cerr << "Failed to read server response or empty response received." << std::endl;
             }
         }
-    }
+      }
+// }
+bool StompProtocol::containsWord(const std::string &text, const std::string &word) {
+    return text.find(word) != std::string::npos;  // Returns true if found
+}
 
 void StompProtocol::generateSummary(const std::string& user, const std::string& channel, const std::string& file) {
     if (usersReportMap.find(user) == usersReportMap.end() || 
@@ -206,9 +228,11 @@ void StompProtocol::generateSummary(const std::string& user, const std::string& 
 
     for (const auto& event : events) {
         std::string summary = event.get_description().substr(0, 27) + (event.get_description().size() > 27 ? "..." : "");
+        string dateTime = convertTimestampToDateTime(event.get_date_time());
+
         outputFile << "Report:\n";
         outputFile << "city: " << event.get_city() << "\n";
-        outputFile << "date time: " << event.get_date_time() << "\n";
+        outputFile << "date time: " << dateTime << "\n";
         outputFile << "event name: " << event.get_name() << "\n";
         outputFile << "summary: " << summary << "\n\n";
     }
@@ -265,7 +289,15 @@ void StompProtocol::processMessage(const std::string& serverResponse){
               << " | Forces on Scene: " << (forcesArrived ? "Yes" : "No") << std::endl;
     std::cout << "--------------------------------------------" << std::endl;
 }
+std::string StompProtocol::convertTimestampToDateTime(int timestamp) {
+    std::time_t time = static_cast<std::time_t>(timestamp);
+    std::tm *tm_info = std::gmtime(&time);  // Convert to UTC time
 
+    std::ostringstream oss;
+    oss << std::put_time(tm_info, "%d/%m/%Y %H:%M:%S");  // Format as DD/MM/YYYY HH:MM:SS
+
+    return oss.str();
+}
 bool StompProtocol::getShouldTerminate()
 {
     return shouldTerminate;

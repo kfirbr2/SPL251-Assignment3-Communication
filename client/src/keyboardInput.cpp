@@ -2,20 +2,20 @@
 #include <vector>
 #include <string>
 
-void split_str(std::string line, char sign, std::vector<std::string>& lineArgs)
+
+void split_str(const string& line, char sign, vector<string>& lineArgs)
 {
-    std::string word = "";
-    for (auto x : line)
-    {
-        if (x == sign)
-        {
-            lineArgs.push_back(word);
-            word = "";
-        }
-        else
-        {
-            word = word + x;
+    lineArgs.clear(); 
+    std::string args = "";
+    for (char c : line) {
+        if (c == sign) {
+            lineArgs.push_back(args); 
+            args.clear();        
+        } else {
+            args += c;               
         }
     }
-    lineArgs.push_back(word);
+    if (!args.empty()) {
+        lineArgs.push_back(args); 
+    }
 }
