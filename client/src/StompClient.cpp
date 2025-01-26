@@ -35,11 +35,12 @@ void listenToServer(std::shared_ptr<ConnectionHandler> &connectionHandler)
             std::string response;
             if (connectionHandler->isConnect() && connectionHandler->isAvailable() > 0)
             {
-                printf("mashu matzchik1");
-                if (connectionHandler->getMessages(response))
+               if (connectionHandler->getMessages(response))
                 {
-                    printf("mashu matzchik2");
-                    protocol.process(connectionHandler, response);
+                protocol.process(connectionHandler, response);
+                if(protocol.getIsLoggedIn()){
+                    isLoggedIn = true;
+                }
                     if (protocol.getIsError())
                     {
                         isError = true;
@@ -50,6 +51,11 @@ void listenToServer(std::shared_ptr<ConnectionHandler> &connectionHandler)
                         connectionHandler->close();
                         connectionHandler = nullptr;
                         isLoggedIn = false;
+                        continue;
+                    }
+                    else if(!protocol.getShouldTerminate())
+                    {
+                        isLoggedIn = true;
                         continue;
                     }
                 }
@@ -85,7 +91,7 @@ void sendMessages()
                 continue;
             }
             if (command == "join" ){
-            if(lineArgs.at(1) != "")
+            if(lineArgs.size() == 2)
             {
 
                 vector<string> frames = protocol.generteFrame(lineArgs, userName);
@@ -105,7 +111,7 @@ void sendMessages()
             
             else if (command == "exit")
             {
-                if (lineArgs.at(1) != "")
+                if (lineArgs.size() == 2)
                 {
 
                     vector<string> frames = protocol.generteFrame(lineArgs, userName);
@@ -126,7 +132,7 @@ void sendMessages()
             }
             else if (command == "report")
             {
-                if (lineArgs.at(1) != "")
+                if (lineArgs.size() == 2)
                 {
 
                     vector<string> frames = protocol.generteFrame(lineArgs, userName);
@@ -147,8 +153,8 @@ void sendMessages()
             }
             else if (command == "summary")
             {
-                if (lineArgs.at(1) != "" && lineArgs.at(2) != "" && lineArgs.at(3) != "")
-                {
+                if (lineArgs.size() == 4)
+                {  
                     protocol.generteFrame(lineArgs, userName);
                     mtx.unlock();
                     continue;
@@ -162,7 +168,7 @@ void sendMessages()
             }
             else if (command == "logout")
             {
-                printf("logout1");
+                if(connectionHandler->  isConnect()){
                 vector<string> frames = protocol.generteFrame(lineArgs, userName);
                 for (string &frame : frames)
                 {
@@ -170,25 +176,31 @@ void sendMessages()
                     mtx.unlock();
                     continue;
                 }
-            }
+                }
             else
             {
                 std::cerr << "Failed to confirm logout. Connection remains open." << std::endl;
                 mtx.unlock();
                 continue;
             }
+            }
+              else{
+                    cout << "Invalid command." << endl;
+                    mtx.unlock();
+                    continue;
+                }
+        
         }
 
         else if (command == "login")
         {
-            if (lineArgs.at(1) != "")
+            if (lineArgs.size() == 4)
             {
                 vector<string> portAndHost;
                 split_str(lineArgs.at(1), ':', portAndHost);
 
                 userName = lineArgs.at(2);
                 passcode = lineArgs.at(3);
-                isLoggedIn = true;
                 connectionHandler = std::make_shared<ConnectionHandler>(portAndHost.at(0), stoi(portAndHost.at(1)));
 
                 string frame = "CONNECT\n"
@@ -198,8 +210,6 @@ void sendMessages()
                                lineArgs.at(2) + "\n"
                                                 "passcode:" +
                                lineArgs.at(3) + "\n\n\0";
-                cout << " host: " << host << " port: " << port << endl;
-                cout << "login frame: " << frame << endl;
                 if (!connectionHandler->connect())
                 {
                     std::cerr << "Could not connect to server" << std::endl;
@@ -218,7 +228,7 @@ void sendMessages()
             }
             else
             {
-                std::cerr << "login need 3 args: {host} {port} {username}" << std::endl;
+                std::cerr << "login need 4 args: {host} {port} {username} {password}" << std::endl;
                 mtx.unlock();
                 continue;
             }
@@ -231,7 +241,9 @@ void sendMessages()
             continue;
         }
         mtx.unlock();
-    }
+        continue;
+    
+        }
 }
 
 // Main function

@@ -13,10 +13,10 @@
 #include <iomanip>
 using namespace std;
 
-StompProtocol::StompProtocol(): subscriptionId(0), receiptId(0), logout(0), shouldTerminate(false), isError(false), subscribeReceiptIdMap(), unsubscribeReceiptIdMap() ,userMap(), usersReportMap() {}
+StompProtocol::StompProtocol(): subscriptionId(0), receiptId(0), logout(0), shouldTerminate(false), isError(false), subscribeReceiptIdMap(), unsubscribeReceiptIdMap() ,userMap(), usersReportMap(), userNameProt(""), mtx() {}
 
 vector<string> StompProtocol::generteFrame(vector<string> args, string userName){
-    printf("generteFrame");
+    userNameProt = userName;
     vector<string> frames;
     string frame = "";
     if (!args.empty() && args.at(0) == "join"){
@@ -38,17 +38,18 @@ vector<string> StompProtocol::generteFrame(vector<string> args, string userName)
     else if (!args.empty() && args.at(0) == "logout")
     {
         receiptId++;
-        printf("logout protocol");
         string frame = "DISCONNECT\nreceipt:" + to_string(receiptId) + "\n\n\0";
-        printf("logout protocol2");
         logout= receiptId;
         frames.push_back(frame);
-        printf("logout protocol3");
     }
     else if (!args.empty() && args.at(0) == "report")
     {
         names_and_events eventsAndNames = parseEventsFile(args.at(1));
         vector<Event> newEvents = eventsAndNames.events;
+        for(Event &event : newEvents)
+        {
+            event.setEventOwnerUser(userName);
+        }
         string channel = eventsAndNames.channel_name;
         map<string, vector<Event>> eventsMap;
         if ( usersReportMap.find(userName) == usersReportMap.end())
@@ -81,10 +82,10 @@ vector<string> StompProtocol::generteFrame(vector<string> args, string userName)
         }
     }
      else if (!args.empty() && args.at(0) == "summary") {
-        string user = args.at(1);
-        string channel = args.at(2);
+        string channel = args.at(1);
+        string user = args.at(2);
         string file = args.at(3);
-        generateSummary(channel, user, file);
+        generateSummary(user, channel, file);
     }
     else {
         std::cout << "[Error] Invalid command.\n";
@@ -106,8 +107,9 @@ void StompProtocol::process(shared_ptr<ConnectionHandler> &connectionHandler, st
                 std::string command = line;
                 if(command == "CONNECTED")
                 {
+                    shouldTerminate = false;
                     std::cout << "Login successful" << std::endl;
-                    // logIn = true;
+                    isLoggedIn = true;
                 }
                 if(command == "MESSAGE")
                 {
@@ -129,7 +131,6 @@ void StompProtocol::process(shared_ptr<ConnectionHandler> &connectionHandler, st
                     }
 
                     // Check for the receipt-id header
-                    printf("receipt protocol");
                     auto receiptIdIt = headers.find("receipt-id");
                     if (receiptIdIt != headers.end())
                     {
@@ -192,13 +193,17 @@ bool StompProtocol::containsWord(const std::string &text, const std::string &wor
 }
 
 void StompProtocol::generateSummary(const std::string& user, const std::string& channel, const std::string& file) {
-    if (usersReportMap.find(user) == usersReportMap.end() || 
-        usersReportMap[user].find(channel) == usersReportMap[user].end()) {
+    string thisChannel = "/"+channel;
+    if (usersReportMap.find(user) == usersReportMap.end()) { 
+        std::cerr << "[Error] No received events found for user: " << user << std::endl;
+        return;
+        }   
+        if(usersReportMap[user].find(thisChannel) == usersReportMap[user].end()) {
         std::cerr << "[Error] No received events found for user: " << user << " in channel: " << channel << std::endl;
         return;
     }
 
-    std::vector<Event> events = usersReportMap[user][channel];
+    std::vector<Event> events = usersReportMap[user][thisChannel];
 
     std::ofstream outputFile(file);
     if (!outputFile) {
@@ -242,52 +247,35 @@ void StompProtocol::generateSummary(const std::string& user, const std::string& 
 }
 
 
-void StompProtocol::processMessage(const std::string& serverResponse){
-    std::istringstream responseStream(serverResponse);
-    std::string line;
-    std::map<std::string, std::string> headers;
-    std::string body;
-
-    bool parsingHeaders = true;
-
-    // Parse STOMP headers and body
-    while (std::getline(responseStream, line)) {
-        if (line.empty()) {
-            parsingHeaders = false; // Blank line indicates start of body
-            continue;
-        }
-
-        if (parsingHeaders) {
-            size_t colonPos = line.find(':');
-            if (colonPos != std::string::npos) {
-                std::string key = line.substr(0, colonPos);
-                std::string value = line.substr(colonPos + 1);
-                headers[key] = value;
+void StompProtocol::processMessage (const std::string& serverResponse){
+   mtx.lock();
+    Event newEvent = Event(serverResponse) ;
+    string channel = newEvent.get_channel_name();
+    string user = newEvent.getEventOwnerUser();
+       if(userNameProt == user){
+        cout<<"reported"<<endl;
+       }
+     if (usersReportMap.find(user) == usersReportMap.end())
+            {
+                usersReportMap[user].emplace(channel, std::vector<Event>{newEvent});
+                mtx.unlock();
             }
-        } else {
-            body += line + "\n"; // Collecting message body
-        }
-    }
+    else if(usersReportMap.find(user) != usersReportMap.end()){
+          if (usersReportMap[user].find(channel) == usersReportMap[user].end())
+            {
+                 vector<Event> events;
+                events.push_back(newEvent);
+                usersReportMap[user][channel] = events;
+                mtx.unlock();
 
-    // Extract necessary fields
-    std::string topic = headers.count("destination") ? headers.at("destination") : "Unknown Topic";
-    std::string user = headers.count("user") ? headers.at("user") : "Unknown User";
-    std::string city = headers.count("city") ? headers.at("city") : "Unknown Location";
-    std::string eventName = headers.count("event name") ? headers.at("event name") : "Unknown Event";
-    std::string dateTime = headers.count("date time") ? headers.at("date time") : "Unknown Time";
-    bool active = headers.count("active") && headers.at("active") == "true";
-    bool forcesArrived = headers.count("forces_arrival_at_scene") && headers.at("forces_arrival_at_scene") == "true";
+            } 
+            else
+            {
+                usersReportMap[user][channel].push_back(newEvent);
+                mtx.unlock();
 
-    // Print the formatted message
-    std::cout << "[" << topic << "] New Emergency Report" << std::endl;
-    std::cout << "Reporter: " << user << std::endl;
-    std::cout << "Location: " << city << std::endl;
-    std::cout << "Date/Time: " << dateTime << std::endl;
-    std::cout << "Event: " << eventName << std::endl;
-    std::cout << "Description: " << body << std::endl;
-    std::cout << "Active: " << (active ? "Yes" : "No") 
-              << " | Forces on Scene: " << (forcesArrived ? "Yes" : "No") << std::endl;
-    std::cout << "--------------------------------------------" << std::endl;
+            }   
+    }    
 }
 std::string StompProtocol::convertTimestampToDateTime(int timestamp) {
     std::time_t time = static_cast<std::time_t>(timestamp);
@@ -301,6 +289,11 @@ std::string StompProtocol::convertTimestampToDateTime(int timestamp) {
 bool StompProtocol::getShouldTerminate()
 {
     return shouldTerminate;
+}
+
+bool StompProtocol::getIsLoggedIn()
+{
+    return isLoggedIn;
 }
 
 void StompProtocol::setShouldTerminate(bool terminate)
