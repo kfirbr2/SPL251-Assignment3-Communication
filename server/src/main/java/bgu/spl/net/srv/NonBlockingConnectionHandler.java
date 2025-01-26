@@ -1,6 +1,4 @@
 package bgu.spl.net.srv;
-
-import bgu.spl.net.api.MessageEncoderDecoder;
 import bgu.spl.net.api.StompMessagingProtocol;
 import bgu.spl.net.impl.stomp.StompMessageEncoderDecoder;
 import java.io.IOException;
@@ -25,11 +23,13 @@ public class NonBlockingConnectionHandler<T> implements ConnectionHandler<T> {
             StompMessageEncoderDecoder<T> reader,
             StompMessagingProtocol<T> protocol,
             SocketChannel chan,
-            Reactor reactor) {
+            Reactor reactor,
+            int connectionId) {
         this.chan = chan;
         this.encdec = reader;
         this.protocol = protocol;
         this.reactor = reactor;
+        this.protocol.start(connectionId,(ConnectionImpl)ConnectionImpl.getInstance());
     }
 
     public Runnable continueRead() {
@@ -49,11 +49,8 @@ public class NonBlockingConnectionHandler<T> implements ConnectionHandler<T> {
                     while (buf.hasRemaining()) {
                         T nextMessage = encdec.decodeNextByte(buf.get());
                         if (nextMessage != null) {
-                            T response = protocol.process(nextMessage);
-                            if (response != null) {
-                                writeQueue.add(ByteBuffer.wrap(encdec.encode(response)));
-                                reactor.updateInterestedOps(chan, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
-                            }
+                             protocol.process(nextMessage);
+                            
                         }
                     }
                 } finally {
@@ -118,6 +115,7 @@ public class NonBlockingConnectionHandler<T> implements ConnectionHandler<T> {
 
     @Override
     public void send(T msg) {
-        //IMPLEMENT IF NEEDED
+        writeQueue.add(ByteBuffer.wrap(encdec.encode(msg)));
+        reactor.updateInterestedOps(chan, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
     }
 }
