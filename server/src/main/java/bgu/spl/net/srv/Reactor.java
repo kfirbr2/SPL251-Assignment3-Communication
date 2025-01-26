@@ -1,7 +1,4 @@
 package bgu.spl.net.srv;
-
-import bgu.spl.net.api.MessageEncoderDecoder;
-import bgu.spl.net.api.MessagingProtocol;
 import bgu.spl.net.api.StompMessagingProtocol;
 import bgu.spl.net.impl.stomp.*;
 import java.io.IOException;
@@ -12,6 +9,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 public class Reactor<T> implements Server<T> {
@@ -21,7 +19,7 @@ public class Reactor<T> implements Server<T> {
     private final Supplier<StompMessageEncoderDecoder<T>> readerFactory;
     private final ActorThreadPool pool;
     private Selector selector;
-
+    private final AtomicInteger connectionId = new AtomicInteger(1);
     private Thread selectorThread;
     private final ConcurrentLinkedQueue<Runnable> selectorTasks = new ConcurrentLinkedQueue<>();
 
@@ -60,7 +58,7 @@ public class Reactor<T> implements Server<T> {
                     if (!key.isValid()) {
                         continue;
                     } else if (key.isAcceptable()) {
-                        handleAccept(serverSock, selector);
+                        handleAccept(serverSock, selector,connectionId);
                     } else {
                         handleReadWrite(key);
                     }
@@ -94,15 +92,17 @@ public class Reactor<T> implements Server<T> {
     }
 
 
-    private void handleAccept(ServerSocketChannel serverChan, Selector selector) throws IOException {
+    private void handleAccept(ServerSocketChannel serverChan, Selector selector,AtomicInteger connectionId) throws IOException {
         SocketChannel clientChan = serverChan.accept();
         clientChan.configureBlocking(false);
+        int currentId = connectionId.getAndIncrement();
         final NonBlockingConnectionHandler<T> handler = new NonBlockingConnectionHandler<>(
                 readerFactory.get(),
                 protocolFactory.get(),
                 clientChan,
-                this);
+                this,currentId);
         clientChan.register(selector, SelectionKey.OP_READ, handler);
+        ((ConnectionImpl)(ConnectionImpl.getInstance())).register(handler,currentId);
     }
 
     private void handleReadWrite(SelectionKey key) {
