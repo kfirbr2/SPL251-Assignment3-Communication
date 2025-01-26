@@ -179,6 +179,7 @@ void StompProtocol::process(shared_ptr<ConnectionHandler> &connectionHandler, st
                         std::cerr << "Error: " << serverResponse << std::endl;
                     }
                     isError = true;
+                    shouldTerminate = true;
                 }
             }
             else

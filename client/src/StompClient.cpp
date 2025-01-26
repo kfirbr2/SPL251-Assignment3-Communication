@@ -35,16 +35,14 @@ void listenToServer(std::shared_ptr<ConnectionHandler> &connectionHandler)
             std::string response;
             if (connectionHandler->isConnect() && connectionHandler->isAvailable() > 0)
             {
-               if (connectionHandler->getMessages(response))
+              if (connectionHandler->getMessages(response))
                 {
-                protocol.process(connectionHandler, response);
-                if(protocol.getIsLoggedIn()){
-                    isLoggedIn = true;
-                }
+                    protocol.process(connectionHandler, response);
                     if (protocol.getIsError())
                     {
                         isError = true;
-                        continue;
+                        protocol.deleteFromUserMap(userName);
+                        connected = false;
                     }
                     if(protocol.getShouldTerminate())
                     {
@@ -65,10 +63,7 @@ void listenToServer(std::shared_ptr<ConnectionHandler> &connectionHandler)
 
         if (isError)
         {
-        	protocol.deleteFromUserMap(userName);
-        	connectionHandler->close();
-        	connectionHandler = nullptr;
-        	connected = false;
+            throw runtime_error("the client is not connected");
         }
 
 }
@@ -194,6 +189,8 @@ void sendMessages()
 
         else if (command == "login")
         {
+            if(!isLoggedIn)
+            {
             if (lineArgs.size() == 4)
             {
                 vector<string> portAndHost;
@@ -210,6 +207,8 @@ void sendMessages()
                                lineArgs.at(2) + "\n"
                                                 "passcode:" +
                                lineArgs.at(3) + "\n\n\0";
+                cout << " host: " << host << " port: " << port << endl;
+                cout << "login frame: " << frame << endl;
                 if (!connectionHandler->connect())
                 {
                     std::cerr << "Could not connect to server" << std::endl;
@@ -232,6 +231,13 @@ void sendMessages()
                 mtx.unlock();
                 continue;
             }
+        }
+        else
+        {
+            std::cerr << "You are already logged in." << std::endl;
+            mtx.unlock();
+            continue;
+        }
         }
 
         else
