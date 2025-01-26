@@ -207,8 +207,6 @@ void sendMessages()
                                lineArgs.at(2) + "\n"
                                                 "passcode:" +
                                lineArgs.at(3) + "\n\n\0";
-                cout << " host: " << host << " port: " << port << endl;
-                cout << "login frame: " << frame << endl;
                 if (!connectionHandler->connect())
                 {
                     std::cerr << "Could not connect to server" << std::endl;
@@ -234,7 +232,7 @@ void sendMessages()
         }
         else
         {
-            std::cerr << "You are already logged in." << std::endl;
+            std::cerr << userName<<" is already logged in." << std::endl;
             mtx.unlock();
             continue;
         }
