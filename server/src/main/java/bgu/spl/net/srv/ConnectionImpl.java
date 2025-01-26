@@ -1,7 +1,4 @@
 package bgu.spl.net.srv;
-
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -9,16 +6,18 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 public class ConnectionImpl<T> implements Connections<T> {
     private final Map<Integer, ConnectionHandler<T>> connections=new ConcurrentHashMap<>(); // connectionId per client
-    private final Map<String, Set<Integer>> channels=new ConcurrentHashMap<>();// channel to ids
-    private final Map<Integer,Map<String, String>> subscriptions=new ConcurrentHashMap<>();// subid to channel
+    private final Map<String, Set<Integer>> channels=new ConcurrentHashMap<>();// channel to sets of connectionId
+    private final Map<Integer,Map<String, String>> subscriptions=new ConcurrentHashMap<>();//connectionid -> channel to subid
     private static Connections<?> instance = null; 
     private static final Object lock = new Object(); // Lock for thread safety
+    private volatile int messagesId=1;
 
     public static <T> Connections<T> getInstance() {
         if (instance == null) {
             synchronized (lock) { 
                 if (instance == null) {  
                     instance = new ConnectionImpl<>();
+                    
                 }
             }
         }
@@ -40,22 +39,31 @@ public class ConnectionImpl<T> implements Connections<T> {
         Set<Integer> subscribers =channels.get(channel);
         if (subscribers != null) {
             for(Integer subscriber : subscribers) {
-                send(subscriber, msg);
+                String subscription=subscriptions.get(subscriber).get(channel);
+                send(subscriber,(T)("MESSAGE\n"+"subscription:"+subscription+"\n"+"message-id:"+messagesId+"\n"+"destination:/"+channel+"\n"+ msg+"\n\u0000"));
+                messagesId++;
             }
         }
     }
     @Override
-    public void disconnect(int connectionId){
-        connections.remove(connectionId);
-        //Remove from all channels
-        for(String channel : subscriptions.get(connectionId).values()) {
-            channels.get(channel).remove(connectionId);
-            if (channels.get(channel).isEmpty()) {
-                channels.remove(channel);
+    public void disconnect(int connectionId) {
+        connections.remove(connectionId); 
+    
+        Map<String, String> userSubscriptions = subscriptions.get(connectionId);
+        if (userSubscriptions != null) { 
+            for (String channel : userSubscriptions.values()) {
+                Set<Integer> channelSubscribers = channels.get(channel);
+                if (channelSubscribers != null) {
+                    channelSubscribers.remove(connectionId);
+                    if (channelSubscribers.isEmpty()) {
+                        channels.remove(channel); 
+                    }
+                }
             }
-        subscriptions.remove(connectionId);
+            subscriptions.remove(connectionId); 
         }
     }
+    
     public void register(ConnectionHandler<T> handler, int connectionId){
         connections.put(connectionId, handler);
     }
