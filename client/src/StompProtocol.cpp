@@ -255,6 +255,7 @@ void StompProtocol::processMessage (const std::string& serverResponse){
     string user = newEvent.getEventOwnerUser();
        if(userNameProt == user){
         cout<<"reported"<<endl;
+        userNameProt = "";
        }
      if (usersReportMap.find(user) == usersReportMap.end())
             {
