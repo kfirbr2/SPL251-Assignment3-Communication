@@ -23,8 +23,8 @@ public class StompMessageEncoderDecoder<T>  implements MessageEncoderDecoder<T>{
 
     @Override
     public byte[] encode(T message){
-        String newMessage = String.join("\n",(String[]) message); 
-        return newMessage.getBytes(StandardCharsets.UTF_8);
+       // String newMessage = String.join("\n",(String[]) message); 
+        return ((String)message).getBytes(StandardCharsets.UTF_8);
 
     }
 
