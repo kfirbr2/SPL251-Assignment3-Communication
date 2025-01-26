@@ -4,15 +4,16 @@ import bgu.spl.net.srv.Connections;
 import bgu.spl.net.srv.ConnectionImpl;
 
 public class Handlers {
-    private final StompProtocol<?> protocol;
-    public Handlers(StompProtocol<?> protocol){
-        this.protocol = protocol;
-    }
+  //  private final StompProtocol<?> protocol;
+   // public Handlers(StompProtocol<?> protocol){
+       // this.protocol = protocol;
+   // }
 
     private static String extractHeader (String [] lines , String key){
+        
         for(String line : lines){
-            if(line.startsWith(key + ":")){
-                return line.substring((key + ":").length()).trim();
+            if(line!=null && line.startsWith(key + ":")){
+                return new String (line.substring((key + ":").length()).trim());
 
             }
         }
@@ -33,7 +34,7 @@ public class Handlers {
         return body.toString().trim();
 
     }
-    public static void handleConnect (String [] msg,int connectionId, Connections connection, StompProtocol protocol) {
+    public static  void handleConnect (String [] msg,int connectionId, Connections connection, StompProtocol protocol) {
       String login=extractHeader(msg,"login");
       String passcode=extractHeader(msg,"passcode");
       String status=Authenticator.authenticate(login,passcode,connectionId);
@@ -54,7 +55,7 @@ public class Handlers {
       }
 
     }
-    public static void handleDisconnect (String [] msg,int connectionId, Connections connection, StompProtocol protocol) {
+    public static  void handleDisconnect (String [] msg,int connectionId, Connections connection, StompProtocol protocol) {
         String receiptId=extractHeader(msg,"receipt");
         connection.send(connectionId,"RECEIPT\nreceipt-id:" + receiptId + "\n\n\u0000");
         protocol.setshouldTerminate(true);
@@ -65,24 +66,32 @@ public class Handlers {
     }
     public static void handleSubscribe (String [] msg,int connectionId, Connections connection, StompProtocol protocol) {
         String destination=extractHeader(msg,"destination");
+        if (destination.startsWith("/")) { 
+              destination = destination.substring(1); 
+            }
         String id=extractHeader(msg,"id");
+        String receiptID=extractHeader(msg,"receipt");
         if(destination.isEmpty() || id.isEmpty()){
             handleError("Malformed SUBSCRIBE frame", connectionId, connection, msg, protocol);
             connection.disconnect(connectionId);
             return;
         }
         ((ConnectionImpl<?>)connection).subscribe(destination,connectionId, id);
-        connection.send(connectionId,"RECEIPT\nreceipt-id:" + id + "\n\n\u0000");
+        connection.send(connectionId,"RECEIPT\nreceipt-id:" + receiptID + "\n\n\u0000");
 
     }
     public static void handleUnsubscribe (String [] msg,int connectionId, Connections connection) {
         String id=extractHeader(msg,"id");
+        String receiptID=extractHeader(msg,"receipt");
         ((ConnectionImpl<?>)connection).unsubscribe(connectionId,id);
-        connection.send(connectionId,"RECEIPT\nreceipt-id:" + id + "\n\n\u0000");
+        connection.send(connectionId,"RECEIPT\nreceipt-id:" + receiptID + "\n\n\u0000");
 
     }
     public static void handleSend (String [] msg,int connectionId, Connections connection, StompProtocol protocol) {
         String destination=extractHeader(msg,"destination");
+        if (destination.startsWith("/")) { 
+            destination = destination.substring(1); 
+          }
         if(((ConnectionImpl<?>)connection).isExistInChannel(destination,connectionId)){
             connection.send(destination,extractBody(msg));
         }
