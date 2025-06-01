@@ -1,12 +1,12 @@
-CFLAGS:=-c -Wall -Weffc++ -g -std=c++11 -Iinclude
-LDFLAGS:=-lboost_system -lpthread
-# TODO change the makefile for StompEMIlient
-all: StompEMIClient
+CFLAGS := -c -Wall -Weffc++ -g -std=c++11 -Iinclude
+LDFLAGS := -lboost_system -lpthread
 
-StompEMIClient: bin/ConnectionHandler.o bin/event.o bin/StompClient.o bin/StompProtocol.o bin/KeyBoardInput.o
-	g++ -o bin/StompEMIClient.o bin/ConnectionHandler.o bin/event.o bin/StompClient.o bin/StompProtocol.o bin/KeyBoardInput.o $(LDFLAGS)
+all: bin/StompEMIClient
 
-EchoClient: bin/ConnectionHandler.o bin/echoClient.o
+bin/StompEMIClient: bin/ConnectionHandler.o bin/event.o bin/StompClient.o bin/StompProtocol.o bin/KeyBoardInput.o
+	g++ -o bin/StompEMIClient bin/ConnectionHandler.o bin/event.o bin/StompClient.o bin/StompProtocol.o bin/KeyBoardInput.o $(LDFLAGS)
+
+bin/EchoClient: bin/ConnectionHandler.o bin/echoClient.o
 	g++ -o bin/EchoClient bin/ConnectionHandler.o bin/echoClient.o $(LDFLAGS)
 
 bin/ConnectionHandler.o: src/ConnectionHandler.cpp
@@ -29,5 +29,4 @@ bin/KeyBoardInput.o: src/KeyBoardInput.cpp
 
 .PHONY: clean
 clean:
-    
 	rm -f bin/*
