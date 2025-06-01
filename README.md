@@ -38,6 +38,9 @@ mvn clean install
 
 Run the server:
 
+mvn exec:java -Dexec.mainClass="bgu.spl.net.impl.stomp.StompServer" -Dexec.args="7777 reactor" / tpc 
+
+
 java -jar target/server.jar
 
 Client
@@ -48,15 +51,10 @@ cd communication_project/client
 
 Compile the client:
 
-g++ -std=c++11 -o client main.cpp StompClient.cpp StompProtocol.cpp -lpthread
+make clean 
+make
+./bin/StompEMIClient
 
-Run the client:
-
-./client
-
-Usage
-
-Start the server.
 
 Run the client and use the following commands:
 
